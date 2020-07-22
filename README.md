@@ -1,5 +1,5 @@
 # _**sentiment analysis**_
-### I will use these datasets to find the best approach for sentiment analysis 
+### I will use these datasets to find efficient approaches for sentiment analysis 
 * [Twitter sentiment analysis dataset](https://www.kaggle.com/arkhoshghalb/twitter-sentiment-analysis-hatred-speech) 
 * more datasets will be added later :)
 
