@@ -47,7 +47,7 @@ def preprocess_text(sen):
 
 train['tweet'] = train['tweet'].apply(preprocess_text)
 
-reviews = train.tweet.to_list()
+tweets = train.tweet.to_list()
 
 BertTokenizer = bert.bert_tokenization.FullTokenizer
 bert_layer = hub.KerasLayer("https://tfhub.dev/tensorflow/bert_en_uncased_L-12_H-768_A-12/1",
@@ -56,26 +56,27 @@ vocabulary_file = bert_layer.resolved_object.vocab_file.asset_path.numpy()
 to_lower_case = bert_layer.resolved_object.do_lower_case.numpy()
 tokenizer = BertTokenizer(vocabulary_file, to_lower_case)
 
-def tokenize_reviews(text_reviews):
-    return tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text_reviews))
+def tokenize_tweets(text_tweets):
+    return tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text_tweets))
 
-tokenized_reviews = [tokenize_reviews(review) for review in reviews]
+tokenized_tweets = [tokenize_tweets(tweet) for tweet in tweets]
+
+np.max(train.tweet.apply(len))
 
 y = np.array(train.label)
-reviews_with_len = [[review, y[i], len(review)] for i, review in enumerate(tokenized_reviews)]
+# tweets_with_len = [[tweet, y[i], len(tweet)] for i, tweet in enumerate(tokenized_tweets)]
+tweets_with_len = [[[review[cnt] if cnt < len(review) else 0 for cnt in range(138)], y[i], len(review)] for i, review in enumerate(tokenized_tweets)]
 
-reviews_with_len.sort(key=lambda x: x[2])
+tweets_with_len.sort(key=lambda x: x[2])
 
-sorted_reviews_labels = [(review_lab[0], review_lab[1]) for review_lab in reviews_with_len]
+sorted_tweets_labels = [(tweet_lab[0], tweet_lab[1]) for tweet_lab in tweets_with_len]
 
-
-
-processed_dataset = tf.data.Dataset.from_generator(lambda: sorted_reviews_labels, output_types=(tf.int32, tf.int32))
+processed_dataset = tf.data.Dataset.from_generator(lambda: sorted_tweets_labels, output_types=(tf.int32, tf.int32))
 
 BATCH_SIZE = 32
 batched_dataset = processed_dataset.padded_batch(BATCH_SIZE, padded_shapes=((None, ), ()))
 
-TOTAL_BATCHES = math.ceil(len(sorted_reviews_labels) / BATCH_SIZE)
+TOTAL_BATCHES = math.ceil(len(sorted_tweets_labels) / BATCH_SIZE)
 TEST_BATCHES = TOTAL_BATCHES // 10
 batched_dataset.shuffle(TOTAL_BATCHES)
 test_data = batched_dataset.take(TEST_BATCHES)
@@ -152,7 +153,7 @@ OUTPUT_CLASSES = 2
 
 DROPOUT_RATE = 0.2
 
-NB_EPOCHS = 6
+NB_EPOCHS = 5
 
 text_model = TEXT_MODEL(vocabulary_size=VOCAB_LENGTH,
                         embedding_dimensions=EMB_DIM,
@@ -182,3 +183,17 @@ else:
                        metrics=["sparse_categorical_accuracy"])
 
 text_model.fit(train_data, epochs=NB_EPOCHS)
+
+text_model.summary()
+
+x_test = test_data.map(lambda tokens,label : tokens)
+
+count = 0 
+for tensor in test_data :
+  count +=1 
+  print(tensor)
+
+print(count)
+
+results = text_model.predict(test_data)
+print(get_f1(y_true=test_data.map(lambda first,sec : list(sec)),y_pred=results))
