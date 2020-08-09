@@ -1,0 +1,4 @@
+model,preprocess_time(seconds),training_time(seconds),predicting_time(seconds),f1_score(percent),n_samples_for_train
+word2vec_LinearSVC,7.65,13.28,1,48.97,22373
+word2vec_nn,34.0,100.0,1,59.33,25569
+BERT,18.0,3000.0,69,72.0,25569
